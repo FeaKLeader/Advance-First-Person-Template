@@ -1,10 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "MyCharacterPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameSession.h"
 
 // Sets default values
 AMyCharacterPlayer::AMyCharacterPlayer()
@@ -13,8 +12,9 @@ AMyCharacterPlayer::AMyCharacterPlayer()
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.f;
-	BaseLookUpRate = 45.f;
+	BaseTurnRate = 45.0f;
+	RollTurnRate = 45.0f;
+	BaseLookUpRate = 45.0f;
 
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -32,12 +32,23 @@ AMyCharacterPlayer::AMyCharacterPlayer()
 void AMyCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
+
+	playerController = GetWorld()->GetFirstPlayerController();
+
+	GetComponents<UCameraComponent>(/*out*/ Cameras);
 }
 
 // Called every frame
 void AMyCharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Calculate change in rotation this frame
+	FRotator DeltaRotation(0, 0, 0);
+	DeltaRotation.Roll += CurrentRollSpeed * DeltaTime;
+
+	// Rotate character
+	AddActorLocalRotation(DeltaRotation);
 }
 
 // Called to bind functionality to input
@@ -52,7 +63,7 @@ void AMyCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 
 	PlayerInputComponent->BindAxis("MoveUp", this, &AMyCharacterPlayer::MoveUp);
 
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("Turn", this, &AMyCharacterPlayer::CameraTurn);
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMyCharacterPlayer::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMyCharacterPlayer::LookUpAtRate);
@@ -92,6 +103,11 @@ void AMyCharacterPlayer::TurnAtRate(float Rate)
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
+void AMyCharacterPlayer::CameraTurn(float Rate)
+{
+	APawn::AddControllerYawInput(Rate);
+}
+
 void AMyCharacterPlayer::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
@@ -122,6 +138,6 @@ void AMyCharacterPlayer::RotatePlayer(float Rate)
 {
 	if (Rate != 0 && characterMovementComponent->IsFlying())
 	{
-		
+		playerController->RotationInput.Roll += Rate;
 	}
 }
