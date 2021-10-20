@@ -32,23 +32,12 @@ AMyCharacterPlayer::AMyCharacterPlayer()
 void AMyCharacterPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-
-	playerController = GetWorld()->GetFirstPlayerController();
-
-	GetComponents<UCameraComponent>(/*out*/ Cameras);
 }
 
 // Called every frame
 void AMyCharacterPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	// Calculate change in rotation this frame
-	FRotator DeltaRotation(0, 0, 0);
-	DeltaRotation.Roll += CurrentRollSpeed * DeltaTime;
-
-	// Rotate character
-	AddActorLocalRotation(DeltaRotation);
 }
 
 // Called to bind functionality to input
@@ -83,8 +72,7 @@ void AMyCharacterPlayer::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
-		// add movement in that direction
-		AddMovementInput(GetActorForwardVector(), Value);
+		AddMovementInput(APawn::GetActorForwardVector(), Value);
 	}
 }
 
@@ -92,34 +80,29 @@ void AMyCharacterPlayer::MoveRight(float Value)
 {
 	if (Value != 0.0f)
 	{
-		// add movement in that direction
-		AddMovementInput(GetActorRightVector(), Value);
+		AddMovementInput(APawn::GetActorRightVector(), Value);
 	}
 }
 
 void AMyCharacterPlayer::TurnAtRate(float Rate)
 {
-	// calculate delta for this frame from the rate information
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
 void AMyCharacterPlayer::CameraTurn(float Rate)
 {
-	APawn::AddControllerYawInput(Rate);
+	AddControllerYawInput(Rate);
 }
 
 void AMyCharacterPlayer::LookUpAtRate(float Rate)
 {
-	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
-//move mode "flying"
 void AMyCharacterPlayer::MoveUp(float Value)
 {
 	if (Value != 0.0f)
 	{
-		// add movement in that direction
 		AddMovementInput(GetActorUpVector(), Value);
 	}
 }
@@ -134,10 +117,14 @@ void AMyCharacterPlayer::UnCrouchPlayer()
 	UnCrouch();
 }
 
+//use pawn controlle rotation is off
+//Rotate Capsule and camera
 void AMyCharacterPlayer::RotatePlayer(float Rate)
 {
 	if (Rate != 0 && characterMovementComponent->IsFlying())
 	{
-		playerController->RotationInput.Roll += Rate;
+		FRotator r = APawn::GetActorRotation();
+		r.Roll += Rate;
+		APawn::SetActorRotation(r);  
 	}
 }
