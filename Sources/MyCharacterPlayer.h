@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "MyCharacterPlayer.generated.h"
 
+class USpringArmComponent;
 class UCameraComponent;
 class UCharacterMovementComponent;
 class APlayerController;
@@ -15,34 +16,39 @@ class AMyCharacterPlayer : public ACharacter
 {
 	GENERATED_BODY()
 
-		/** First person camera */
 		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		UCameraComponent* FirstPersonCameraComponent;
+		USceneComponent* root;
 
-		/** characterMovementComponent */
-		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		UCapsuleComponent* capsule;
+
+	/** First person camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		UCameraComponent* camera;
+
+	/** characterMovementComponent */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		UCharacterMovementComponent* characterMovementComponent;
 
-		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		APlayerController* playerController;
 
-		TInlineComponentArray<UCameraComponent*> Cameras;
+	TInlineComponentArray<UCameraComponent*> Cameras;
 
-		/** Current yaw speed */
-		float CurrentYawSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		USpringArmComponent* springArms;
 
-		/** Current pitch speed */
-		float CurrentPitchSpeed;
+	/** Current yaw speed */
+	float CurrentYawSpeed;
 
-		/** Current roll speed */
-		float CurrentRollSpeed;
+	/** Current pitch speed */
+	float CurrentPitchSpeed;
+
+	/** Current roll speed */
+	float CurrentRollSpeed;
 public:
 	// Sets default values for this character's properties
 	AMyCharacterPlayer();
-
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
-		float BaseTurnRate;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float RollTurnRate;
@@ -63,12 +69,6 @@ protected:
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
-
-	/**
- * Called via input to turn at a given rate.
- * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
- */
-	void TurnAtRate(float Rate);
 
 	void CameraTurn(float Rate);
 

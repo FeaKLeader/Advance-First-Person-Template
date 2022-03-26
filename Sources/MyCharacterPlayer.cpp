@@ -4,26 +4,36 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/GameSession.h"
+#include "GameFramework/SpringArmComponent.h"
 
 // Sets default values
 AMyCharacterPlayer::AMyCharacterPlayer()
 {
+	root = UObject::CreateDefaultSubobject<USceneComponent>(TEXT("root"));
+
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	capsule = ACharacter::GetCapsuleComponent();
+	capsule->SetupAttachment(root);
+	capsule->InitCapsuleSize(55.f, 96.0f);
 
 	// set our turn rates for input
-	BaseTurnRate = 45.0f;
-	RollTurnRate = 45.0f;
-	BaseLookUpRate = 45.0f;
+	RollTurnRate = 25.0f;
+	BaseLookUpRate = 20.0f;
 
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	springArms = UObject::CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArms"));
+	springArms->SetupAttachment(GetCapsuleComponent());
+	springArms->TargetArmLength = 0.f;
+	springArms->bUsePawnControlRotation = true;
+	springArms->bDoCollisionTest = false;
+
 	// Create a CameraComponent	
-	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCameraComponent"));
-	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.0f, 1.75f, 64.f)); // Position the camera
-	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+	camera = UObject::CreateDefaultSubobject<UCameraComponent>(TEXT("camera"));
+	camera->SetupAttachment(springArms);
+	camera->SetRelativeLocation(FVector(0.0f, 1.75f, 64.f)); // Position the camera
+	camera->bUsePawnControlRotation = true;
 
 	characterMovementComponent = this->GetCharacterMovement();
 }
@@ -49,15 +59,13 @@ void AMyCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyCharacterPlayer::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMyCharacterPlayer::MoveRight);
-
 	PlayerInputComponent->BindAxis("MoveUp", this, &AMyCharacterPlayer::MoveUp);
-
-	PlayerInputComponent->BindAxis("Turn", this, &AMyCharacterPlayer::CameraTurn);
-	PlayerInputComponent->BindAxis("TurnRate", this, &AMyCharacterPlayer::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("LookUpRate", this, &AMyCharacterPlayer::LookUpAtRate);
-
 	PlayerInputComponent->BindAxis("Rotate", this, &AMyCharacterPlayer::RotatePlayer);
+
+	// Look 
+	PlayerInputComponent->BindAxis("Turn", this, &AMyCharacterPlayer::CameraTurn);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMyCharacterPlayer::LookUpAtRate);
+	PlayerInputComponent->BindAxis("LookUpRate", this, &AMyCharacterPlayer::LookUpAtRate);
 
 	// Bind jump events
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
@@ -70,41 +78,37 @@ void AMyCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 
 void AMyCharacterPlayer::MoveForward(float Value)
 {
-	if (Value != 0.0f)
-	{
-		AddMovementInput(APawn::GetActorForwardVector(), Value);
-	}
+	if (Value == 0.0f) { return; }
+
+	AddMovementInput(camera->GetForwardVector(), Value);
 }
 
 void AMyCharacterPlayer::MoveRight(float Value)
 {
-	if (Value != 0.0f)
-	{
-		AddMovementInput(APawn::GetActorRightVector(), Value);
-	}
-}
+	if (Value == 0.0f) { return; }
 
-void AMyCharacterPlayer::TurnAtRate(float Rate)
-{
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+	AddMovementInput(camera->GetRightVector(), Value);
 }
 
 void AMyCharacterPlayer::CameraTurn(float Rate)
 {
-	AddControllerYawInput(Rate);
+	if (Rate == 0.0f) { return; }
+
+	APawn::AddControllerYawInput(Rate);
 }
 
 void AMyCharacterPlayer::LookUpAtRate(float Rate)
 {
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	if (Rate == 0.0f) { return; }
+
+	APawn::AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
 void AMyCharacterPlayer::MoveUp(float Value)
 {
-	if (Value != 0.0f)
-	{
-		AddMovementInput(GetActorUpVector(), Value);
-	}
+	if (Value == 0.0f) { return; }
+
+	APawn::AddMovementInput(camera->GetUpVector(), Value);
 }
 
 void AMyCharacterPlayer::CrouchPlayer()
@@ -121,10 +125,13 @@ void AMyCharacterPlayer::UnCrouchPlayer()
 //Rotate Capsule and camera
 void AMyCharacterPlayer::RotatePlayer(float Rate)
 {
-	if (Rate != 0 && characterMovementComponent->IsFlying())
-	{
-		FRotator r = APawn::GetActorRotation();
-		r.Roll += Rate;
-		APawn::SetActorRotation(r);  
-	}
+	if (Rate == 0.0f) { return; }
+	if (characterMovementComponent->IsFlying() != true) { return; }
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Orange, TEXT("Rotation : " + APawn::GetActorLocation().ToString()));
+
+	FRotator r = APawn::GetActorRotation();
+	r.Roll += Rate;
+	APawn::SetActorRotation(r);
 }
