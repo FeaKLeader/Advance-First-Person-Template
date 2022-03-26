@@ -60,7 +60,7 @@ void AMyCharacterPlayer::SetupPlayerInputComponent(class UInputComponent* Player
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyCharacterPlayer::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMyCharacterPlayer::MoveRight);
 	PlayerInputComponent->BindAxis("MoveUp", this, &AMyCharacterPlayer::MoveUp);
-	PlayerInputComponent->BindAxis("Rotate", this, &AMyCharacterPlayer::RotatePlayer);
+	PlayerInputComponent->BindAxis("Rotate", this, &AMyCharacterPlayer::RotateLocalUpPlayer);
 
 	// Look 
 	PlayerInputComponent->BindAxis("Turn", this, &AMyCharacterPlayer::CameraTurn);
@@ -90,25 +90,82 @@ void AMyCharacterPlayer::MoveRight(float Value)
 	AddMovementInput(camera->GetRightVector(), Value);
 }
 
-void AMyCharacterPlayer::CameraTurn(float Rate)
-{
-	if (Rate == 0.0f) { return; }
-
-	APawn::AddControllerYawInput(Rate);
-}
-
-void AMyCharacterPlayer::LookUpAtRate(float Rate)
-{
-	if (Rate == 0.0f) { return; }
-
-	APawn::AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
-}
-
 void AMyCharacterPlayer::MoveUp(float Value)
 {
 	if (Value == 0.0f) { return; }
 
 	APawn::AddMovementInput(camera->GetUpVector(), Value);
+}
+
+/// <summary>
+/// Yaw Rotation
+/// </summary>
+/// <param name="Rate"></param>
+void AMyCharacterPlayer::CameraTurn(float Rate)
+{
+	if (Rate == 0.0f) { return; }
+
+	FRotator r = FRotator();
+	r.Yaw += Rate;
+	APawn::AddActorLocalRotation(r);
+}
+
+/// <summary>
+/// Pitch Rotation
+/// </summary>
+/// <param name="Rate"></param>
+void AMyCharacterPlayer::LookUpAtRate(float Rate)
+{
+	if (Rate == 0.0f) { return; }
+
+	float angle = -Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds();
+
+	FRotator rotatorCamera = camera->GetRelativeTransform().GetRotation().Rotator();
+	rotatorCamera.Pitch += angle;
+
+	if (rotatorCamera.Pitch > -60 && rotatorCamera.Pitch < 60)
+	{
+		FRotator r = FRotator();
+		r.Pitch += angle;
+		camera->AddRelativeRotation(r);
+	}
+	else
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Orange, TEXT("Rotation  Loock : " + rotatorCamera.ToString()));
+
+
+		//if (characterMovementComponent->IsFlying())
+			//this->RotateLocalRightPlayer(angle);
+
+	}
+}
+
+/// <summary>
+/// Yaw Rotation 
+/// </summary>
+/// <param name="Rate"></param>
+void AMyCharacterPlayer::RotateLocalRightPlayer(float Rate)
+{
+	/*FRotator r = FRotator();
+	r.Yaw += Rate;*/
+	//capsule->AddRelativeRotation(r);
+}
+
+//use pawn controlle rotation is off
+//Rotate Capsule and camera
+void AMyCharacterPlayer::RotateLocalUpPlayer(float Rate)
+{
+	if (Rate == 0.0f) { return; }
+	if (characterMovementComponent->IsFlying() != true) { return; }
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Orange, TEXT("Rotation "));
+
+	FRotator r = FRotator();
+	r.Roll += Rate;
+	//APawn::AddActorLocalRotation(r);
+	capsule->AddLocalRotation(r);
 }
 
 void AMyCharacterPlayer::CrouchPlayer()
@@ -119,19 +176,4 @@ void AMyCharacterPlayer::CrouchPlayer()
 void AMyCharacterPlayer::UnCrouchPlayer()
 {
 	UnCrouch();
-}
-
-//use pawn controlle rotation is off
-//Rotate Capsule and camera
-void AMyCharacterPlayer::RotatePlayer(float Rate)
-{
-	if (Rate == 0.0f) { return; }
-	if (characterMovementComponent->IsFlying() != true) { return; }
-
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Orange, TEXT("Rotation : " + APawn::GetActorLocation().ToString()));
-
-	FRotator r = APawn::GetActorRotation();
-	r.Roll += Rate;
-	APawn::SetActorRotation(r);
 }

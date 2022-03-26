@@ -46,6 +46,7 @@ class AMyCharacterPlayer : public ACharacter
 
 	/** Current roll speed */
 	float CurrentRollSpeed;
+
 public:
 	// Sets default values for this character's properties
 	AMyCharacterPlayer();
@@ -84,7 +85,9 @@ protected:
 
 	void UnCrouchPlayer();
 
-	void RotatePlayer(float Rate);
+	void RotateLocalUpPlayer(float Rate);
+
+	void RotateLocalRightPlayer(float Rate);
 
 public:
 	// Called every frame
