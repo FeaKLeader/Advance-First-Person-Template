@@ -58,6 +58,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
 
+	/** Limit camera angle  */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+		float CameraAngleLimit;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -86,8 +90,6 @@ protected:
 	void UnCrouchPlayer();
 
 	void RotateLocalUpPlayer(float Rate);
-
-	void RotateLocalRightPlayer(float Rate);
 
 public:
 	// Called every frame
